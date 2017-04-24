@@ -11,8 +11,6 @@ import android.util.Base64;
 import android.util.Log;
 import android.view.View;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -26,14 +24,12 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.UnrecoverableEntryException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.List;
 import java.util.Locale;
 
+import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
+import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.security.auth.x500.X500Principal;
 
@@ -65,13 +61,16 @@ class KeystoreTool {
             }
             input.init(Cipher.ENCRYPT_MODE, getPublicKey(context));
 
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            CipherOutputStream cipherOutputStream = new CipherOutputStream(
-                    outputStream, input);
-            cipherOutputStream.write(plainMessage.getBytes(KEY_CHARSET));
-            cipherOutputStream.close();
+//            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+//            CipherOutputStream cipherOutputStream = new CipherOutputStream(
+//                    outputStream, input);
+//            cipherOutputStream.write(plainMessage.getBytes(KEY_CHARSET));
+//            cipherOutputStream.close();
 
-            byte[] values = outputStream.toByteArray();
+            byte[] values = input.doFinal(plainMessage.getBytes(KEY_CHARSET));
+
+
+//            byte[] values = outputStream.toByteArray();
             return Base64.encodeToString(values, Base64.DEFAULT);
 
         } catch (NoSuchAlgorithmException
@@ -79,6 +78,10 @@ class KeystoreTool {
                 | NoSuchPaddingException
                 | InvalidKeyException
                 | IOException e) {
+            throw new CryptoException(e.getMessage(), e);
+        } catch (BadPaddingException e) {
+            throw new CryptoException(e.getMessage(), e);
+        } catch (IllegalBlockSizeException e) {
             throw new CryptoException(e.getMessage(), e);
         }
     }
@@ -99,18 +102,20 @@ class KeystoreTool {
 
             output.init(Cipher.DECRYPT_MODE, getPrivateKey(context));
 
-            CipherInputStream cipherInputStream = new CipherInputStream(
-                    new ByteArrayInputStream(Base64.decode(encryptedMessage, Base64.DEFAULT)), output);
-            List<Byte> values = new ArrayList<>();
-            int nextByte;
-            while ((nextByte = cipherInputStream.read()) != -1) {
-                values.add((byte) nextByte);
-            }
+//            CipherInputStream cipherInputStream = new CipherInputStream(
+//                    new ByteArrayInputStream(Base64.decode(encryptedMessage, Base64.DEFAULT)), output);
+//            List<Byte> values = new ArrayList<>();
+//            int nextByte;
+//            while ((nextByte = cipherInputStream.read()) != -1) {
+//                values.add((byte) nextByte);
+//            }
+//
+//            byte[] bytes = new byte[values.size()];
+//            for (int i = 0; i < bytes.length; i++) {
+//                bytes[i] = values.get(i);
+//            }
 
-            byte[] bytes = new byte[values.size()];
-            for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = values.get(i);
-            }
+            byte[] bytes = output.doFinal(encryptedMessage.getBytes(KEY_CHARSET));
 
             return new String(bytes, 0, bytes.length, KEY_CHARSET);
 
@@ -119,6 +124,10 @@ class KeystoreTool {
                 | NoSuchPaddingException
                 | InvalidKeyException
                 | IOException e) {
+            throw new CryptoException(e.getMessage(), e);
+        } catch (BadPaddingException e) {
+            throw new CryptoException(e.getMessage(), e);
+        } catch (IllegalBlockSizeException e) {
             throw new CryptoException(e.getMessage(), e);
         }
     }
