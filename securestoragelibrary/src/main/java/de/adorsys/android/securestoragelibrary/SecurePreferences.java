@@ -23,14 +23,9 @@ public class SecurePreferences {
     private static final String KEY_SHARED_PREFERENCES_NAME = "SecurePreferences";
     private static final String KEY_SET_COUNT_POSTFIX = "_count";
 
-    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static void setValue(@NonNull String key,
                                 @NonNull String value,
                                 @NonNull Context context) throws CryptoException {
-        if (!KeystoreTool.keyPairExists()) {
-            KeystoreTool.generateKeyPair(context);
-        }
-
         String transformedValue = KeystoreTool.encryptMessage(context, value);
         if (!TextUtils.isEmpty(transformedValue)) {
             setSecureValue(key, transformedValue, context);
@@ -39,31 +34,26 @@ public class SecurePreferences {
         }
     }
 
-    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static void setValue(@NonNull String key, boolean value,
                                 @NonNull Context context) throws CryptoException {
         setValue(key, String.valueOf(value), context);
     }
 
-    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static void setValue(@NonNull String key, float value,
                                 @NonNull Context context) throws CryptoException {
         setValue(key, String.valueOf(value), context);
     }
 
-    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static void setValue(@NonNull String key, long value,
                                 @NonNull Context context) throws CryptoException {
         setValue(key, String.valueOf(value), context);
     }
 
-    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static void setValue(@NonNull String key, int value,
                                 @NonNull Context context) throws CryptoException {
         setValue(key, String.valueOf(value), context);
     }
 
-    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     public static void setValue(@NonNull String key, @NonNull Set<String> value,
                                 @NonNull Context context) throws CryptoException {
         setValue(key + KEY_SET_COUNT_POSTFIX, String.valueOf(value.size()), context);
@@ -79,13 +69,9 @@ public class SecurePreferences {
                                         @NonNull Context context,
                                         @Nullable String defValue) {
         String result = getSecureValue(key, context);
-        try {
-            if (!TextUtils.isEmpty(result)) {
-                return KeystoreTool.decryptMessage(context, result);
-            } else {
-                return defValue;
-            }
-        } catch (CryptoException e) {
+        if (!TextUtils.isEmpty(result)) {
+            return KeystoreTool.decryptMessage(context, result);
+        } else {
             return defValue;
         }
     }
@@ -130,7 +116,7 @@ public class SecurePreferences {
 
 
     public static void clearAllValues(@NonNull Context context) throws CryptoException {
-        if (KeystoreTool.keyPairExists()) {
+        if (KeystoreTool.keyPairExists(context)) {
             KeystoreTool.deleteKeyPair(context);
         }
         clearAllSecureValues(context);
